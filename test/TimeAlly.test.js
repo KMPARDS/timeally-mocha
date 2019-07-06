@@ -20,7 +20,7 @@ let accounts
 //   console.log(await provider.listAccounts());
 // });
 
-describe('Ganache', async() => {
+describe('Ganache Setup', async() => {
   it('initiates ganache and generates a bunch of accounts', async() => {
     accounts = await provider.listAccounts();
 
@@ -28,7 +28,7 @@ describe('Ganache', async() => {
   });
 });
 
-describe('Era Swap contract', async() => {
+describe('Era Swap Setup', async() => {
   it('deploys Era Swap token contract from first account', async() => {
     const eraSwapContract = new ethers.ContractFactory(
       eraSwapTokenJSON.abi,
@@ -45,8 +45,8 @@ describe('Era Swap contract', async() => {
 
     assert.equal(
       balanceOfDeployer.toString(),
-      '910000000000000000000000000',
-      'deployer did not get 910000000000000000000000000 in ExaES units'
+      ethers.utils.parseEther('910000000').toString(),
+      'deployer did not get 910000000 ES'
     );
   });
 
@@ -60,7 +60,7 @@ describe('Era Swap contract', async() => {
   });
 });
 
-describe('NRT Manager', async() => {
+describe('NRT Manager Setup', async() => {
   it('deploys NRT manager from the first account', async() => {
     const nrtManagerContract = new ethers.ContractFactory(
       nrtManagerJSON.abi,
@@ -79,7 +79,7 @@ describe('NRT Manager', async() => {
 });
 
 
-describe('TimeAlly', async() => {
+describe('TimeAlly Setup', async() => {
   it('deploys TimeAlly from the first account', async() => {
     const timeAllyContract = new ethers.ContractFactory(
       timeAllyJSON.abi,
@@ -113,7 +113,7 @@ describe('TimeAlly', async() => {
     assert.ok(loanAndRefundInstance.address);
   });
 
-  it('invokes setaddress method in TimeAlly', async() => {
+  it('invokes setaddress method in TimeAlly from first account', async() => {
     await timeAllyInstance.setaddress(stakingInstance.address, loanAndRefundInstance.address);
 
     const stakingAddressInTimeAlly = await timeAllyInstance.staking();
@@ -122,7 +122,72 @@ describe('TimeAlly', async() => {
     assert.equal(stakingAddressInTimeAlly, stakingInstance.address, 'stakingAddressInTimeAlly does not match actual staking address');
     assert.equal(loanRefundAddressInTimeAlly, loanAndRefundInstance.address, 'loanRefundAddressInTimeAlly does not match actual loanAndRefund address');
   });
+
+  it('invokes Update Addresses in NRT Manager from first account', async() => {
+    await nrtManagerInstance.UpdateAddresses([
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000",
+      timeAllyInstance.address
+    ]);
+
+    // checking if timeAlly address is set in NRT manager
+    const timeAllyAddressInNRTManager = await nrtManagerInstance.TimeAlly();
+
+    assert.equal(timeAllyAddressInNRTManager, timeAllyInstance.address, 'timeAllyAddressInNRTManager does not match actual timeAlly address');
+  });
+
+  it('invokes createPlan function in TimeAlly to create first plan from first account', async() => {
+    const args = {
+      _planPeriod: 31104000,
+      _loanInterestRate: 5,
+      _loanPeriod: 5184000,
+      _refundWeeks: 6
+    };
+
+    await timeAllyInstance.createPlan(
+      args._planPeriod,
+      args._loanInterestRate,
+      args._loanPeriod,
+      args._refundWeeks
+    );
+
+    // checking if the plan is actually created
+    const output = await timeAllyInstance.plans(0);
+
+    assert.equal(output[0].toString(), args._planPeriod);
+    assert.equal(output[1].toString(), args._loanInterestRate);
+    assert.equal(output[2].toString(), args._loanPeriod);
+    assert.equal(output[3].toString(), args._refundWeeks);
+  });
 });
+
+
+describe('User stakes', async() => {
+  it('first account sends 10000 ES to second account', async() => {
+    await eraSwapInstance.transfer(accounts[1], ethers.utils.parseEther('10000'));
+
+    const balanceOfSecond = await eraSwapInstance.balanceOf(accounts[1]);
+
+    assert.equal(balanceOfSecond.toString(), ethers.utils.parseEther('10000').toString());
+  });
+
+  it('second account gives allowance of 10000 ES to timeAlly', async() => {
+    // building tx object
+    const oo = new ethers.utils.AbiCoder(eraSwapInstance.interface.functions['approve']);
+    console.log(oo.encode(['address', 'uint256'],[timeAllyInstance.address, ethers.utils.parseEther('10000')]));
+    const data = eraSwapInstance.interface.functions['approve(address,uint256)'](timeAllyInstance.address, ethers.utils.parseEther('10000'));
+  });
+});
+
+
+
+
 
 
 

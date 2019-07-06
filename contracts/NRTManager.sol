@@ -209,7 +209,7 @@ contract NRTManager {
         timeSwappersNRT = (NRTBal.mul(325)).div(1000);
 
         // sending tokens to respective wallets and emitting events
-        token.mint(newTalentsAndPartnerships,newTalentsAndPartnershipsBal);
+        /* token.mint(newTalentsAndPartnerships,newTalentsAndPartnershipsBal);
         emit NRTTransfer("newTalentsAndPartnerships", newTalentsAndPartnerships, newTalentsAndPartnershipsBal);
 
         token.mint(platformMaintenance,platformMaintenanceBal);
@@ -228,13 +228,13 @@ contract NRTManager {
         emit NRTTransfer("researchAndDevelopment", researchAndDevelopment, researchAndDevelopmentBal);
 
         token.mint(buzzCafe,buzzCafeNRT);
-        emit NRTTransfer("buzzCafe", buzzCafe, buzzCafeNRT);
+        emit NRTTransfer("buzzCafe", buzzCafe, buzzCafeNRT); */
 
         token.mint(TimeAlly,TimeAllyNRT);
         emit NRTTransfer("stakingContract", TimeAlly, TimeAllyNRT);
 
-        token.mint(timeSwappers,timeSwappersNRT);
-        emit NRTTransfer("timeSwappers", timeSwappers, timeSwappersNRT);
+        /* token.mint(timeSwappers,timeSwappersNRT);
+        emit NRTTransfer("timeSwappers", timeSwappers, timeSwappersNRT); */
 
         // Reseting NRT
         emit NRTDistributed(NRTBal);

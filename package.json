@@ -1,0 +1,20 @@
+{
+  "name": "timeally-mocha",
+  "version": "1.0.0",
+  "description": "",
+  "main": "compile.js",
+  "dependencies": {
+    "ethers": "^4.0.32",
+    "fs-extra": "^8.1.0",
+    "ganache-cli": "^6.4.4",
+    "solc": "^0.5.2"
+  },
+  "devDependencies": {
+    "mocha": "^6.1.4"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "Soham Zemse",
+  "license": "ISC"
+}

@@ -113,9 +113,15 @@ describe('TimeAlly', async() => {
     assert.ok(loanAndRefundInstance.address);
   });
 
-  // it('does this', async() => {
-  //   console.log('first it');
-  // });
+  it('invokes setaddress method in TimeAlly', async() => {
+    await timeAllyInstance.setaddress(stakingInstance.address, loanAndRefundInstance.address);
+
+    const stakingAddressInTimeAlly = await timeAllyInstance.staking();
+    const loanRefundAddressInTimeAlly = await timeAllyInstance.loanAndRefund();
+
+    assert.equal(stakingAddressInTimeAlly, stakingInstance.address, 'stakingAddressInTimeAlly does not match actual staking address');
+    assert.equal(loanRefundAddressInTimeAlly, loanAndRefundInstance.address, 'loanRefundAddressInTimeAlly does not match actual loanAndRefund address');
+  });
 });
 
 

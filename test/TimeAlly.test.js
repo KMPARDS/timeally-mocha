@@ -198,10 +198,77 @@ describe('User stakes', async() => {
     const response = await signer.sendTransaction(unsignedTx);
     //await provider.getTransaction(response.hash)
 
-    //checking allowance
+    //checking if allowance is successfully given to timeally
     const allowance = await eraSwapInstance.allowance(accounts[1], timeAllyInstance.address);
-    //console.log(allowance.toString());
     assert.equal(allowance.toString(), ethers.utils.parseEther('10000'));
+  });
+
+  it('second account invokes createContract method in TimeAlly to stake ES for himself/herself', async() => {
+    // // building tx object
+    // const data = timeAllyInstance.interface.functions.createContract.encode([
+    //   accounts[1],
+    //   0,
+    //   ethers.utils.parseEther('10000') // parsing ES to exaES
+    // ]);
+    //
+    // const unsignedTx = {
+    //   to: timeAllyInstance.address,
+    //   //nonce:,
+    //   gasLimit: 1000000,
+    //   gasPrice: ethers.utils.parseUnits('1', 'gwei'),
+    //   data,
+    //   value: 0
+    // }
+    //
+    // const signer = provider.getSigner(accounts[1]);
+    //
+    // const response = await signer.sendTransaction(unsignedTx);
+    // assert.ok(response.hash);
+    // //await provider.getTransaction(response.hash)
+    //
+    // //checking if contract was created successfully
+    // const calltx = {
+    //   to: timeAllyInstance.address,
+    //   data: timeAllyInstance.interface.functions.viewContract.encode([0])
+    // };
+    // const contract = await signer.call(calltx);
+
+    const signer2 = provider.getSigner(accounts[1]);
+
+    // //cloning eraSwapInstance with signer for second account
+    // const eraSwapInstance2 = new ethers.Contract(eraSwapInstance.address, eraSwapTokenJSON.abi, signer2)
+
+    //cloning timeAllyInstance with signer for second address
+    const timeAllyInstance2 = new ethers.Contract(timeAllyInstance.address, timeAllyJSON.abi, signer2);
+
+    const response =await timeAllyInstance2.createContract(accounts[1], 0, ethers.utils.parseEther('10000'));
+    assert.ok(response.hash);
+
+    const contract = await timeAllyInstance2.viewContract(0);
+    //`console.log(contract)
+    assert.equal(contract[3], accounts[1]);
+
+    const stakes = await timeAllyInstance2.viewUserStakes(0);
+    // console.log(stakes[1].toString());
+    assert.equal(stakes[1].toString(), ethers.utils.parseEther('10000'));
+  });
+
+  it('balance of second account is decreased by 10000 ES and it goes to TimeAlly', async() => {
+    const balanceOfSecond = await eraSwapInstance.balanceOf(accounts[1]);
+
+    assert.equal(
+      balanceOfSecond.toString(),
+      ethers.utils.parseEther('0').toString(),
+      'second account amount did not decrease'
+    );
+
+    const balanceOfTimeAlly = await eraSwapInstance.balanceOf(timeAllyInstance.address);
+
+    assert.equal(
+      balanceOfTimeAlly.toString(),
+      ethers.utils.parseEther('10000').toString(),
+      'timeally did not get user staking'
+    );
   });
 });
 

@@ -179,9 +179,29 @@ describe('User stakes', async() => {
 
   it('second account gives allowance of 10000 ES to timeAlly', async() => {
     // building tx object
-    const oo = new ethers.utils.AbiCoder(eraSwapInstance.interface.functions['approve']);
-    console.log(oo.encode(['address', 'uint256'],[timeAllyInstance.address, ethers.utils.parseEther('10000')]));
-    const data = eraSwapInstance.interface.functions['approve(address,uint256)'](timeAllyInstance.address, ethers.utils.parseEther('10000'));
+    const data = eraSwapInstance.interface.functions.approve.encode([
+      timeAllyInstance.address,
+      ethers.utils.parseEther('10000')
+    ]);
+
+    const unsignedTx = {
+      to: eraSwapInstance.address,
+      //nonce:,
+      gasLimit: 50000,
+      gasPrice: ethers.utils.parseUnits('1', 'gwei'),
+      data,
+      value: 0
+    }
+
+    const signer = provider.getSigner(accounts[1]);
+
+    const response = await signer.sendTransaction(unsignedTx);
+    //await provider.getTransaction(response.hash)
+
+    //checking allowance
+    const allowance = await eraSwapInstance.allowance(accounts[1], timeAllyInstance.address);
+    //console.log(allowance.toString());
+    assert.equal(allowance.toString(), ethers.utils.parseEther('10000'));
   });
 });
 

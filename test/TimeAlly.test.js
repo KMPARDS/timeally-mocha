@@ -270,6 +270,25 @@ describe('User stakes', async() => {
       'timeally did not get user staking'
     );
   });
+
+  it('second account needs 4000 ES urgently and takes loan over his/her prestaked contract of 10000 ES', async() => {
+    // creating timeAllyInstance2 with signer of second account
+    const signer2 = provider.getSigner(accounts[1]);
+    const timeAllyInstance2 = new ethers.Contract(timeAllyInstance.address, timeAllyJSON.abi, signer2);
+
+    await timeAllyInstance2.takeLoan(0, ethers.utils.parseEther('4000'));
+
+    // checking if loan of 4000 ES is credited to second account
+    const balanceOfSecond = await eraSwapInstance.balanceOf(accounts[1]);
+
+    assert.equal(
+      balanceOfSecond.toString(),
+      ethers.utils.parseEther('4000').toString(),
+      'second account amount did not receive loan amount'
+    );
+  });
+
+
 });
 
 

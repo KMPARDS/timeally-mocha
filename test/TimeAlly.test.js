@@ -23,7 +23,7 @@ let eraSwapInstance2, timeAllyInstance2;
 // });
 
 describe('Ganache Setup', async() => {
-  it('initiates ganache and generates a bunch of accounts', async() => {
+  it('initiates ganache and generates a bunch of demo accounts', async() => {
     accounts = await provider.listAccounts();
 
     assert.ok(accounts.length >= 2, 'could not see 2 accounts in the array');
@@ -39,15 +39,14 @@ describe('Era Swap Setup', async() => {
     );
     eraSwapInstance =  await eraSwapContract.deploy();
 
-    assert.ok(eraSwapInstance.address);
+    assert.ok(eraSwapInstance.address, 'conract address not present');
   });
 
   it('gives first account 91,00,00,000 ES balance', async() => {
     const balanceOfDeployer = await eraSwapInstance.balanceOf(accounts[0]);
 
-    assert.equal(
-      balanceOfDeployer.toString(),
-      ethers.utils.parseEther('910000000').toString(),
+    assert.ok(
+      balanceOfDeployer.eq(ethers.utils.parseEther('910000000')),
       'deployer did not get 910000000 ES'
     );
   });
@@ -55,9 +54,9 @@ describe('Era Swap Setup', async() => {
   it('mou() time machine is present', async() => {
     try {
       const mou = await eraSwapInstance.mou();
-      assert.ok(mou.toString());
+      assert.ok(mou.gt(0), 'mou() time machine not giving non zero time stamp');
     } catch (e) {
-      assert(false);
+      assert(false, 'mou() method is not present in era swap contract');
     }
   });
 });
@@ -71,7 +70,7 @@ describe('NRT Manager Setup', async() => {
     );
     nrtManagerInstance = await nrtManagerContract.deploy(eraSwapInstance.address);
 
-    assert.ok(nrtManagerInstance.address);
+    assert.ok(nrtManagerInstance.address, 'conract address not present');
   });
 
   it('invokes AddNRTManager method in the Era Swap Instance from first account', async() => {
@@ -90,7 +89,7 @@ describe('TimeAlly Setup', async() => {
     );
     timeAllyInstance = await timeAllyContract.deploy(eraSwapInstance.address, nrtManagerInstance.address, {gasLimit: 8000000});
 
-    assert.ok(timeAllyInstance.address);
+    assert.ok(timeAllyInstance.address, 'conract address not present');
   });
 
   it('deploys Staking from the first account', async() => {
@@ -101,7 +100,7 @@ describe('TimeAlly Setup', async() => {
     );
     stakingInstance = await stakingContract.deploy(timeAllyInstance.address);
 
-    assert.ok(stakingInstance.address);
+    assert.ok(stakingInstance.address, 'conract address not present');
   });
 
   it('deploys LoanAndRefund from the first account', async() => {
@@ -112,7 +111,7 @@ describe('TimeAlly Setup', async() => {
     );
     loanAndRefundInstance = await loanAndRefundContract.deploy(timeAllyInstance.address, eraSwapInstance.address);
 
-    assert.ok(loanAndRefundInstance.address);
+    assert.ok(loanAndRefundInstance.address, 'conract address not present');
   });
 
   it('invokes setaddress method in TimeAlly from first account', async() => {
@@ -162,10 +161,10 @@ describe('TimeAlly Setup', async() => {
     // checking if the plan is actually created
     const output = await timeAllyInstance.plans(0);
 
-    assert.equal(output[0].toString(), args._planPeriod);
-    assert.equal(output[1].toString(), args._loanInterestRate);
-    assert.equal(output[2].toString(), args._loanPeriod);
-    assert.equal(output[3].toString(), args._refundWeeks);
+    assert.ok(output[0].eq(args._planPeriod), 'plan period not matching');
+    assert.ok(output[1].eq(args._loanInterestRate), 'loan interest rate not matching');
+    assert.ok(output[2].eq(args._loanPeriod), 'loan period not matching');
+    assert.ok(output[3].eq(args._refundWeeks), 'refund weeks not matching');
   });
 });
 
@@ -176,7 +175,7 @@ describe('User stakes', async() => {
 
     const balanceOfSecond = await eraSwapInstance.balanceOf(accounts[1]);
 
-    assert.equal(balanceOfSecond.toString(), ethers.utils.parseEther('10000').toString());
+    assert.ok(balanceOfSecond.eq(ethers.utils.parseEther('10000')), 'second user not got balance');
   });
 
   it('second account gives allowance of 10000 ES to timeAlly', async() => {
@@ -202,7 +201,7 @@ describe('User stakes', async() => {
 
     //checking if allowance is successfully given to timeally
     const allowance = await eraSwapInstance.allowance(accounts[1], timeAllyInstance.address);
-    assert.equal(allowance.toString(), ethers.utils.parseEther('10000'));
+    assert.ok(allowance.eq(ethers.utils.parseEther('10000')), 'enuf allowance was not given to timeally');
   });
 
   it('second account invokes createContract method in TimeAlly to stake ES for himself/herself', async() => {
@@ -243,32 +242,30 @@ describe('User stakes', async() => {
     //cloning timeAllyInstance with signer for second address
     timeAllyInstance2 = new ethers.Contract(timeAllyInstance.address, timeAllyJSON.abi, signer2);
 
-    const response =await timeAllyInstance2.createContract(accounts[1], 0, ethers.utils.parseEther('10000'));
-    assert.ok(response.hash);
+    const response = await timeAllyInstance2.createContract(accounts[1], 0, ethers.utils.parseEther('10000'));
+    assert.ok(response.hash, 'did not get tx receipt');
 
     const contract = await timeAllyInstance2.viewContract(0);
     //`console.log(contract)
-    assert.equal(contract[3], accounts[1]);
+    assert.equal(contract[3], accounts[1], 'owner of contract missmatch');
 
     const stakes = await timeAllyInstance2.viewUserStakes(0);
     // console.log(stakes[1].toString());
-    assert.equal(stakes[1].toString(), ethers.utils.parseEther('10000'));
+    assert.ok(stakes[1].eq(ethers.utils.parseEther('10000')), 'staking amount missmatch');
   });
 
   it('balance of second account is decreased by 10000 ES and it goes to TimeAlly', async() => {
     const balanceOfSecond = await eraSwapInstance.balanceOf(accounts[1]);
 
-    assert.equal(
-      balanceOfSecond.toString(),
-      ethers.utils.parseEther('0').toString(),
+    assert.ok(
+      balanceOfSecond.eq(ethers.utils.parseEther('0')),
       'second account amount did not decrease'
     );
 
     const balanceOfTimeAlly = await eraSwapInstance.balanceOf(timeAllyInstance.address);
 
-    assert.equal(
-      balanceOfTimeAlly.toString(),
-      ethers.utils.parseEther('10000').toString(),
+    assert.ok(
+      balanceOfTimeAlly.eq(ethers.utils.parseEther('10000')),
       'timeally did not get user staking'
     );
   });
@@ -280,22 +277,21 @@ describe('User stakes', async() => {
     // checking if loan of 4000 ES is credited to second account
     const balanceOfSecond = await eraSwapInstance.balanceOf(accounts[1]);
 
-    assert.equal(
-      balanceOfSecond.toString(),
-      ethers.utils.parseEther('4000').toString(),
+    assert.ok(
+      balanceOfSecond.eq(ethers.utils.parseEther('4000')),
       'second account amount did not receive loan amount'
     );
 
     // checking if contract status is 2
     const contract = await timeAllyInstance2.viewContract(0);
-    assert.equal(contract[0].toString(), '2');
+    assert.ok(contract[0].eq(2), 'contract status is not 2');
   });
 
   it('repay loan 4000 ES deducts 1% more, i.e. 4040 ES', async() => {
 
     // checking loanRepaymentAmount should be 4040 ES
     const loanRepaymentAmount = await timeAllyInstance2.loanRepaymentAmount(0);
-    assert.equal(loanRepaymentAmount.toString(), ethers.utils.parseEther('4040').toString(), 'loanRepaymentAmount missmatch with loan rate 1%');
+    assert.ok(loanRepaymentAmount.eq(ethers.utils.parseEther('4040')), 'loanRepaymentAmount missmatch with loan rate 1%');
 
     // second account has 4000 ES, sending 40 ES from first account to second account
     await eraSwapInstance.transfer(accounts[1], ethers.utils.parseEther('40'));
@@ -311,15 +307,14 @@ describe('User stakes', async() => {
 
     await timeAllyInstance2.rePayLoan(0);
 
-    assert.equal(
-      balanceOfSecond.sub(await eraSwapInstance.balanceOf(accounts[1])).toString(),
-      ethers.utils.parseEther('4040').toString(),
+    assert.ok(
+      balanceOfSecond.sub(await eraSwapInstance.balanceOf(accounts[1])).eq(ethers.utils.parseEther('4040')),
       'amount deducted does not equal 101% of loan value'
     );
 
     // checking if contract status is 1
     const contract = await timeAllyInstance2.viewContract(0);
-    assert.equal(contract[0].toString(), '1');
+    assert.ok(contract[0].eq('1'), 'contract status is not 1');
   });
 
   it('second account can transfer ownership to third account and back to second account', async() => {
@@ -331,27 +326,51 @@ describe('User stakes', async() => {
     const timeAllyInstance3 = new ethers.Contract(timeAllyInstance.address, timeAllyJSON.abi, signer3);
 
     const contract = await timeAllyInstance3.viewContract(0);
-    assert.equal(contract[3], accounts[2]);
+    assert.equal(contract[3], accounts[2], 'contract owner missmatch');
 
     // transfering it back to second acconut
     await timeAllyInstance3.transferOwnership(0, accounts[1]);
   });
 });
 
+describe('monthlyMasterHandler in TimeAlly', async() => {
+  it('time travelling to the future by 1 month using mou() time machine', async() => {
+    const currentTime = await eraSwapInstance.mou();
+    const depth = 32 * 24 * 60 * 60; // adding 1 to offset as in contract require s
+    await eraSwapInstance.goToFuture(depth);
+    const currentTimeAfterComingOutFromTimeMachine = await eraSwapInstance.mou();
 
+    assert.ok(
+      currentTimeAfterComingOutFromTimeMachine.sub(currentTime).gte(depth),
+      'time travel did not happen successfully'
+    );
+  });
 
+  it('invoking MonthlyNRTRelease in NRT contract and checking if TimeAlly receives any ES', async() => {
+    const timeAllyBalance = await eraSwapInstance.balanceOf(timeAllyInstance.address);
+    await nrtManagerInstance.MonthlyNRTRelease();
+    const timeAllyBalanceNew = await eraSwapInstance.balanceOf(timeAllyInstance.address);
 
+    assert.ok(timeAllyBalanceNew.gt(timeAllyBalance), 'Time ally did not get NRT');
+  });
 
+  it('invoking monthlyMasterHandler Step 0', async() => {
+    await timeAllyInstance.monthlyMasterHandler(1);
+  });
 
+  it('invoking monthlyMasterHandler Step 1', async() => {
+    await timeAllyInstance.monthlyMasterHandler(1);
+  });
 
+  it('invoking monthlyMasterHandler Step 2', async() => {
+    await timeAllyInstance.monthlyMasterHandler(1);
+  });
 
-//
-// describe('second', async() => {
-//   it('does this', async() => {
-//     console.log('first it');
-//   });
-//
-//   it('does this', async() => {
-//     console.log('first it');
-//   });
-// });
+  it('invoking monthlyMasterHandler Step 3', async() => {
+    await timeAllyInstance.monthlyMasterHandler(1);
+  });
+
+  it('invoking monthlyMasterHandler Step 4', async() => {
+    await timeAllyInstance.monthlyMasterHandler(1);
+  });
+});

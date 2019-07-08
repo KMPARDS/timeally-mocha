@@ -336,7 +336,7 @@ describe('User stakes', async() => {
 describe('monthlyMasterHandler in TimeAlly', async() => {
   it('time travelling to the future by 1 month using mou() time machine', async() => {
     const currentTime = await eraSwapInstance.mou();
-    const depth = 32 * 24 * 60 * 60; // adding 1 to offset as in contract require s
+    const depth = 30 * 24 * 60 * 60;
     await eraSwapInstance.goToFuture(depth);
     const currentTimeAfterComingOutFromTimeMachine = await eraSwapInstance.mou();
 

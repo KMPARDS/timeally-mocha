@@ -16,6 +16,8 @@ let accounts
 , stakingInstance
 , loanAndRefundInstance;
 
+let eraSwapInstance2, timeAllyInstance2;
+
 // beforeEach(async() => {
 //   console.log(await provider.listAccounts());
 // });
@@ -145,7 +147,7 @@ describe('TimeAlly Setup', async() => {
   it('invokes createPlan function in TimeAlly to create first plan from first account', async() => {
     const args = {
       _planPeriod: 31104000,
-      _loanInterestRate: 5,
+      _loanInterestRate: 1,
       _loanPeriod: 5184000,
       _refundWeeks: 6
     };
@@ -239,7 +241,7 @@ describe('User stakes', async() => {
     // const eraSwapInstance2 = new ethers.Contract(eraSwapInstance.address, eraSwapTokenJSON.abi, signer2)
 
     //cloning timeAllyInstance with signer for second address
-    const timeAllyInstance2 = new ethers.Contract(timeAllyInstance.address, timeAllyJSON.abi, signer2);
+    timeAllyInstance2 = new ethers.Contract(timeAllyInstance.address, timeAllyJSON.abi, signer2);
 
     const response =await timeAllyInstance2.createContract(accounts[1], 0, ethers.utils.parseEther('10000'));
     assert.ok(response.hash);
@@ -272,9 +274,6 @@ describe('User stakes', async() => {
   });
 
   it('second account needs 4000 ES urgently and takes loan over his/her prestaked contract of 10000 ES', async() => {
-    // creating timeAllyInstance2 with signer of second account
-    const signer2 = provider.getSigner(accounts[1]);
-    const timeAllyInstance2 = new ethers.Contract(timeAllyInstance.address, timeAllyJSON.abi, signer2);
 
     await timeAllyInstance2.takeLoan(0, ethers.utils.parseEther('4000'));
 
@@ -286,9 +285,57 @@ describe('User stakes', async() => {
       ethers.utils.parseEther('4000').toString(),
       'second account amount did not receive loan amount'
     );
+
+    // checking if contract status is 2
+    const contract = await timeAllyInstance2.viewContract(0);
+    assert.equal(contract[0].toString(), '2');
   });
 
+  it('repay loan 4000 ES deducts 1% more, i.e. 4040 ES', async() => {
 
+    // checking loanRepaymentAmount should be 4040 ES
+    const loanRepaymentAmount = await timeAllyInstance2.loanRepaymentAmount(0);
+    assert.equal(loanRepaymentAmount.toString(), ethers.utils.parseEther('4040').toString(), 'loanRepaymentAmount missmatch with loan rate 1%');
+
+    // second account has 4000 ES, sending 40 ES from first account to second account
+    await eraSwapInstance.transfer(accounts[1], ethers.utils.parseEther('40'));
+
+    // creating eraSwapInstance2 with signer of second account
+    const signer2 = provider.getSigner(accounts[1]);
+    eraSwapInstance2 = new ethers.Contract(eraSwapInstance.address, eraSwapTokenJSON.abi, signer2);
+
+    const balanceOfSecond = await eraSwapInstance.balanceOf(accounts[1]);
+
+    // giving allowance of 4040 from second account to timeAlly
+    await eraSwapInstance2.approve(timeAllyInstance.address, ethers.utils.parseEther('4040'));
+
+    await timeAllyInstance2.rePayLoan(0);
+
+    assert.equal(
+      balanceOfSecond.sub(await eraSwapInstance.balanceOf(accounts[1])).toString(),
+      ethers.utils.parseEther('4040').toString(),
+      'amount deducted does not equal 101% of loan value'
+    );
+
+    // checking if contract status is 1
+    const contract = await timeAllyInstance2.viewContract(0);
+    assert.equal(contract[0].toString(), '1');
+  });
+
+  it('second account can transfer ownership to third account and back to second account', async() => {
+    // second account transfers ownership of contract id 0 to third account
+    await timeAllyInstance2.transferOwnership(0, accounts[2]);
+
+    // creating timeAllyInstance3 with signer of third account
+    const signer3 = provider.getSigner(accounts[2]);
+    const timeAllyInstance3 = new ethers.Contract(timeAllyInstance.address, timeAllyJSON.abi, signer3);
+
+    const contract = await timeAllyInstance3.viewContract(0);
+    assert.equal(contract[3], accounts[2]);
+
+    // transfering it back to second acconut
+    await timeAllyInstance3.transferOwnership(0, accounts[1]);
+  });
 });
 
 

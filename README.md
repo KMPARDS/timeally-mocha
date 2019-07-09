@@ -8,7 +8,7 @@ Testing for the TimeAlly smart contract of Era Swap Ecosystem
 
 If you make any changes to contract source code, then do `node compile.js`
 
-## `mou()` time machine logic (for testing purpose)
+## `mou()` time forwarding logic (for testing purpose)
 This logic is written in `./contracts/Eraswap.sol` file from `line 24` to `line 44`. Instead of using `now` for getting the current timestamp, `mou()` is used, it returns offset timestamp. The offset can be changed by other methods. Eraswap contract is linked with other contracts and we can use a common time source.
 ### Methods
 - `mou()`: This returns the offset timestamp (`uint256`).

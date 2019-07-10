@@ -35,13 +35,26 @@ const input = {
     }
 }
 
+console.log('\nCompiling contracts...');
 const output = JSON.parse(solc.compile(JSON.stringify(input)));
-//console.log(output.contracts['Eraswap.sol']);
+console.log('Done');
 
+let shouldBuild = true;
 
-if (Object.entries(output).length === 0) {
-  throw '\nError in compilation please check the contract\n';
-} else {
+if (output.errors) {
+  console.error(output.errors);
+  // throw '\nError in compilation please check the contract\n';
+  for(error in output.errors) {
+    if(error.severity) {
+      shouldBuild = false;
+      break;
+    }
+  }
+}
+
+if(shouldBuild) {
+  console.log('\nBuilding please wait...\n');
+
   fs.removeSync(buildFolderPath);
   fs.ensureDirSync(buildFolderPath);
 
@@ -56,4 +69,7 @@ if (Object.entries(output).length === 0) {
       i++;
     }
   }
+  console.log('\nBuild finished successfully!\n');
+} else {
+  console.log('\nBuild failed\n');
 }

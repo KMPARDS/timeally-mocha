@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const ganache = require('ganache-cli');
 //const provider = numberOfAccounts => new ethers.providers.Web3Provider(ganache.provider({ gasLimit: 8000000, accounts: numberOfAccounts || 5 }));
 
-const provider = new ethers.providers.Web3Provider(ganache.provider({ gasLimit: 80000000, total_accounts: 101 }) );
+const provider = new ethers.providers.Web3Provider(ganache.provider({ gasLimit: 80000000*10, total_accounts: 101 }) );
 
 const eraSwapTokenJSON = require('./build/Eraswap_0.json');
 const nrtManagerJSON = require('./build/NRTManager_0.json');
@@ -136,9 +136,13 @@ let accounts
 
     //console.log(Object.values(args));
 
-    console.log(`Gas required for ${no} contract creations:`,(await timeAllyInstance[0].estimate.createContractsByBatch(
+    // console.log(`Gas required for ${no} contract creations:`,(await timeAllyInstance[0].estimate.createContractsByBatch(
+    //   ...Object.values(args)
+    // )).toNumber());
+
+    return (await timeAllyInstance[0].estimate.createContractsByBatch(
       ...Object.values(args)
-    )).toNumber());
+    )).toNumber();
 
     // await timeAllyInstance[0].createContractsByBatch(
     //   ...Object.values(args)
@@ -150,8 +154,12 @@ let accounts
 
 
   console.log(`\nEstimating gas createContractsByBatch in TimeAlly for 1 to 100 addresses`);
+  let oldGas, newGas;
   for(let i = 1; i <= 100; i++) {
-    await estimateBatchCreation(i);
+    oldGas = newGas;
+    const startTime = (new Date()).getTime();
+    newGas = await estimateBatchCreation(i);
+    console.log(`For ${i} contracts: ${newGas}; diff: ${newGas - oldGas}, time: ${((new Date()).getTime() - startTime) / 1000} secs`);
   }
   console.log('done');
 })();
